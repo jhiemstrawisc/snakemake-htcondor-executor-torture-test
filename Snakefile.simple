@@ -1,0 +1,33 @@
+# Simplified Snakefile to test htcondor_transfer_input_files behavior
+# with missing files (testing PR #43 behavior change)
+#
+# To test:
+# 1. Set htcondor_transfer_input_files to a file that DOES NOT EXIST
+# 2. Run with the OLD executor version (without the `return` fix)
+#    - Expected: The missing file gets added to transfer list, job fails
+# 3. Run with the NEW executor version (with the `return` fix)
+#    - Expected: Warning logged, missing file NOT added to transfer list
+#
+# Change the path below to test different scenarios:
+#   - "scripts/stats_helpers.py"  -> file EXISTS (should transfer normally)
+#   - "scripts/DOES_NOT_EXIST.py" -> file MISSING (tests the PR fix)
+
+rule all:
+    input:
+        "output/test_result.txt"
+
+rule test_transfer:
+    output:
+        "output/test_result.txt"
+    resources:
+        container_image="docker://jhiemstra/snakemake-dev-image:v1",
+        universe="container",
+        request_disk="1GB",
+        request_memory="512MB",
+        # Change this to a non-existent file to test the missing file behavior
+        htcondor_transfer_input_files="scripts/DOES_NOT_EXIST.py"
+    shell:
+        """
+        echo "Transfer test completed successfully" > {output}
+        echo "If you see this, the job ran!" >> {output}
+        """
